@@ -7,13 +7,28 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (email === '' || password === '') {
       setError('Both email and password are required');
       return;
     }
-    // Add your login logic here
-    navigate('/DoctorProfile');
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        navigate('/DoctorProfile');
+      } else {
+        setError(data.message || 'Invalid credentials');
+      }
+    } catch (error) {
+      setError('Error logging in. Please try again later.');
+    }
   };
 
   const handleSignup = () => {
@@ -22,7 +37,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md text-center">
+      <div className="bg-white p-8 rounded shadow-md text-center w-96">
         <h1 className="text-2xl font-bold mb-4">Login</h1>
         <input
           type="email"
@@ -40,17 +55,17 @@ const LoginPage = () => {
         />
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <button
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4"
+          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mb-4 w-full"
           onClick={handleLogin}
         >
           Login
         </button>
         <div className="mt-4">
           <button
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+            className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 w-full"
             onClick={handleSignup}
           >
-            Sign Up if you don't have an account
+            Sign Up
           </button>
         </div>
       </div>

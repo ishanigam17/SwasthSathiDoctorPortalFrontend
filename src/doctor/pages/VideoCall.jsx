@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const VideoCallPage = () => {
@@ -6,15 +6,15 @@ const VideoCallPage = () => {
   const [selectedMedicine, setSelectedMedicine] = useState('');
   const [notes, setNotes] = useState('');
   const [message, setMessage] = useState('');
+  const [medicines, setMedicines] = useState([]);
   const navigate = useNavigate();
 
-  const medicines = [
-    'Paracetamol',
-    'Ibuprofen',
-    'Aspirin',
-    'Amoxicillin',
-    'Metformin'
-  ];
+  useEffect(() => {
+    fetch('/api/medicines')
+      .then(response => response.json())
+      .then(data => setMedicines(data))
+      .catch(error => console.error('Error fetching medicines:', error));
+  }, []);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -30,7 +30,14 @@ const VideoCallPage = () => {
   };
 
   const handleNavigateToPatientCard = () => {
-    navigate('/PatientCard', { state: { notes, selectedMedicine } });
+    fetch('/api/save-notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes, selectedMedicine })
+    })
+      .then(response => response.json())
+      .then(() => navigate('/PatientCard', { state: { notes, selectedMedicine } }))
+      .catch(error => console.error('Error saving notes:', error));
   };
 
   const filteredMedicines = medicines.filter((medicine) =>

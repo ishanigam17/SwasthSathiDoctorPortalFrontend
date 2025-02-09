@@ -1,29 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pie, Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 
 const DoctorPortal = () => {
-  const doctorInfo = {
-    name: 'Dr. Jane Doe',
-    degree: 'MD, Cardiology'
-  };
-
+  const [doctorInfo, setDoctorInfo] = useState({ name: '', degree: '' });
   const [onlinePatients, setOnlinePatients] = useState([]);
+  const [meetingHistory, setMeetingHistory] = useState([]);
+  const [isOnline, setIsOnline] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Fetch doctor details
+    fetch('/api/doctor')
+      .then(response => response.json())
+      .then(data => setDoctorInfo(data))
+      .catch(error => console.error('Error fetching doctor info:', error));
+
+    // Fetch previous meetings
+    fetch('/api/meetings')
+      .then(response => response.json())
+      .then(data => setMeetingHistory(data))
+      .catch(error => console.error('Error fetching meetings:', error));
+  }, []);
+
   const handleToggleOnline = () => {
-    if (onlinePatients.length > 0) {
-      setOnlinePatients([]); // Go offline
-    } else {
-      // Simulate fetching online patients
-      const patients = [
-        { name: 'Patient 1', status: 'Online' },
-        { name: 'Patient 2', status: 'Online' },
-        { name: 'Patient 3', status: 'Online' },
-      ];
-      setOnlinePatients(patients); // Go online
-    }
+    fetch('/api/toggle-online', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isOnline: !isOnline })
+    })
+      .then(response => response.json())
+      .then(data => {
+        setIsOnline(data.isOnline);
+        if (data.isOnline) {
+          fetch('/api/online-patients')
+            .then(response => response.json())
+            .then(data => setOnlinePatients(data))
+            .catch(error => console.error('Error fetching online patients:', error));
+        } else {
+          setOnlinePatients([]);
+        }
+      })
+      .catch(error => console.error('Error toggling online status:', error));
   };
 
   const handleLogout = () => {
@@ -35,10 +54,10 @@ const DoctorPortal = () => {
   };
 
   const pieData = {
-    labels: ['Red', 'Blue', 'Yellow'],
+    labels: ['Consultations', 'Follow-ups', 'Surgeries'],
     datasets: [
       {
-        data: [300, 50, 100],
+        data: [150, 80, 30],
         backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
         hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
       }
@@ -46,27 +65,13 @@ const DoctorPortal = () => {
   };
 
   const barData = {
-    labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: 'Votes',
-        data: [12, 19, 3, 5, 2, 3],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 206, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(255, 159, 64, 0.2)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)'
-        ],
+        label: 'Appointments',
+        data: [12, 19, 25, 30, 22, 18],
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
         borderWidth: 1
       }
     ]
@@ -74,13 +79,13 @@ const DoctorPortal = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <div className="w-1/4 bg-gray-100 p-4 flex flex-col justify-between fixed h-full">
+      <div className="w-1/4 bg-gray-100 p-4 flex flex-col justify-between fixed h-full shadow-lg">
         <div className="flex-grow">
           <button
-            className={`${onlinePatients.length > 0 ? 'bg-red-500' : 'bg-green-500'} text-white py-2 px-4 rounded mb-4 w-full`}
+            className={`${isOnline ? 'bg-red-500' : 'bg-green-500'} text-white py-2 px-4 rounded mb-4 w-full`}
             onClick={handleToggleOnline}
           >
-            {onlinePatients.length > 0 ? 'Go Offline' : 'Go Online'}
+            {isOnline ? 'Go Offline' : 'Go Online'}
           </button>
           {onlinePatients.length > 0 && (
             <div className="bg-white p-4 rounded shadow-md mb-4">
@@ -89,7 +94,7 @@ const DoctorPortal = () => {
                 {onlinePatients.map((patient, index) => (
                   <li
                     key={index}
-                    className="py-2 border-b border-gray-300 cursor-pointer"
+                    className="py-2 border-b border-gray-300 cursor-pointer hover:bg-gray-200"
                     onClick={handlePatientClick}
                   >
                     {patient.name} - {patient.status}
@@ -117,39 +122,25 @@ const DoctorPortal = () => {
           <div className="text-gray-600">Degree: {doctorInfo.degree}</div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-4 rounded shadow-md">
-            <div className="text-center text-lg font-bold mb-4">Pie Chart</div>
-            <Pie data={pieData} />
+          <div className="bg-white p-4 rounded shadow-md flex items-center justify-center h-64">
+            <Pie data={pieData} options={{ maintainAspectRatio: false, responsive: true }} />
           </div>
-          <div className="bg-white p-4 rounded shadow-md">
-            <div className="text-center text-lg font-bold mb-4">Bar Chart</div>
-            <Bar data={barData} />
+          <div className="bg-white p-4 rounded shadow-md flex items-center justify-center h-64">
+            <Bar data={barData} options={{ maintainAspectRatio: false, responsive: true }} />
           </div>
         </div>
         <div className="bg-white p-4 rounded shadow-md mt-4">
           <div className="text-lg font-bold mb-4">Previous Meetings</div>
           <ul>
-            <li className="flex justify-between items-center py-2 border-b">
-              <div>
-                <div className="font-bold">John Doe</div>
-                <div className="text-gray-600">Check-up</div>
-              </div>
-              <div className="text-gray-600">2023-05-15 10:00 AM</div>
-            </li>
-            <li className="flex justify-between items-center py-2 border-b">
-              <div>
-                <div className="font-bold">Jane Smith</div>
-                <div className="text-gray-600">Consultation</div>
-              </div>
-              <div className="text-gray-600">2023-05-14 2:30 PM</div>
-            </li>
-            <li className="flex justify-between items-center py-2">
-              <div>
-                <div className="font-bold">Bob Johnson</div>
-                <div className="text-gray-600">Follow-up</div>
-              </div>
-              <div className="text-gray-600">2023-05-13 11:15 AM</div>
-            </li>
+            {meetingHistory.map((meeting, index) => (
+              <li key={index} className="flex justify-between items-center py-2 border-b">
+                <div>
+                  <div className="font-bold">{meeting.patientName}</div>
+                  <div className="text-gray-600">{meeting.type}</div>
+                </div>
+                <div className="text-gray-600">{meeting.date}</div>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

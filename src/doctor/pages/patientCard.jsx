@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const PatientCard = () => {
   const location = useLocation();
-  const { notes, selectedMedicine } = location.state || {};
+  const [patientData, setPatientData] = useState(null);
+
+  useEffect(() => {
+    // Simulating fetching patient details dynamically
+    fetch('/api/patient-details')
+      .then(response => response.json())
+      .then(data => setPatientData(data))
+      .catch(error => console.error('Error fetching patient details:', error));
+  }, []);
+
+  if (!patientData) {
+    return <div className="flex justify-center items-center min-h-screen bg-gray-100">Loading...</div>;
+  }
+
+  const { name, age, patientId, doctor, selectedMedicine, notes } = patientData;
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -14,14 +28,14 @@ const PatientCard = () => {
             <span className="text-gray-600">App Logo</span>
           </div>
           <div className="text-right">
-            <h2 className="text-xl font-semibold">Dr. Jane Smith</h2>
-            <p className="text-gray-500">MD, FACP</p>
+            <h2 className="text-xl font-semibold">{doctor.name}</h2>
+            <p className="text-gray-500">{doctor.degree}</p>
           </div>
         </div>
         <div className="mb-4">
-          <h3 className="text-2xl font-bold">John Doe</h3>
-          <p className="text-gray-600">Age: 35</p>
-          <p className="text-gray-600">Patient ID: PT12345</p>
+          <h3 className="text-2xl font-bold">{name}</h3>
+          <p className="text-gray-600">Age: {age}</p>
+          <p className="text-gray-600">Patient ID: {patientId}</p>
         </div>
         <div className="mb-4">
           <h4 className="text-lg font-semibold">Medicine Recommended</h4>
